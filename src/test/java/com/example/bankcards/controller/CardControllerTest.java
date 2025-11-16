@@ -227,7 +227,7 @@ class CardControllerTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ADMIN")
     void updateCard_Success() throws Exception {
         when(cardCommandService.updateCard(eq(1L), any(CardUpdateRequest.class), anyLong()))
                 .thenReturn(cardResponse);
@@ -242,7 +242,7 @@ class CardControllerTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ADMIN")
     void updateCardStatus_Success() throws Exception {
         when(cardCommandService.updateCardStatus(eq(1L), any(CardStatusUpdateRequest.class), anyLong()))
                 .thenReturn(cardResponse);
