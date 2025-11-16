@@ -1,0 +1,79 @@
+databaseChangeLog:
+  - changeSet:
+      id: 5-insert-initial-users
+      author: system
+      changes:
+        - insert:
+            tableName: users
+            columns:
+              - column:
+                  name: username
+                  value: admin
+              - column:
+                  name: password
+                  value: $2a$10$slYQmyNdGzTn7ZLBXBChFOC9f6kFjAqPhccnP6DxlWXx2lPk1C3G6 # password: admin123
+              - column:
+                  name: email
+                  value: admin@bankcard.com
+              - column:
+                  name: first_name
+                  value: Admin
+              - column:
+                  name: last_name
+                  value: User
+              - column:
+                  name: role
+                  value: ADMIN
+              - column:
+                  name: enabled
+                  valueBoolean: true
+
+        - insert:
+            tableName: users
+            columns:
+              - column:
+                  name: username
+                  value: john_doe
+              - column:
+                  name: password
+                  value: $2a$10$slYQmyNdGzTn7ZLBXBChFOC9f6kFjAqPhccnP6DxlWXx2lPk1C3G6 # password: admin123
+              - column:
+                  name: email
+                  value: john.doe@example.com
+              - column:
+                  name: first_name
+                  value: John
+              - column:
+                  name: last_name
+                  value: Doe
+              - column:
+                  name: role
+                  value: USER
+              - column:
+                  name: enabled
+                  valueBoolean: true
+
+        - insert:
+            tableName: users
+            columns:
+              - column:
+                  name: username
+                  value: jane_smith
+              - column:
+                  name: password
+                  value: $2a$10$slYQmyNdGzTn7ZLBXBChFOC9f6kFjAqPhccnP6DxlWXx2lPk1C3G6 # password: admin123
+              - column:
+                  name: email
+                  value: jane.smith@example.com
+              - column:
+                  name: first_name
+                  value: Jane
+              - column:
+                  name: last_name
+                  value: Smith
+              - column:
+                  name: role
+                  value: USER
+              - column:
+                  name: enabled
+                  valueBoolean: true

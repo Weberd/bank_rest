@@ -1,1 +1,392 @@
-# Здесь будет OpenAPI описание всех доступных эндпоинтов и моделей данных.
+openapi: 3.0.3
+info:
+  title: Bank Cards API
+  version: 1.0.0
+  description: Authentication and card management endpoints.
+
+servers:
+  - url: /api/v1
+
+tags:
+  - name: Authentication
+    description: Authentication and registration endpoints
+  - name: Cards
+    description: Card management endpoints
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    RegisterRequest:
+      type: object
+      required:
+        - email
+        - password
+        - firstName
+        - lastName
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+        firstName:
+          type: string
+        lastName:
+          type: string
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        tokenType:
+          type: string
+          example: Bearer
+        expiresIn:
+          type: integer
+          description: Token expiration in seconds
+
+    CardCreateRequest:
+      type: object
+      required:
+        - number
+        - holderName
+        - expirationDate
+        - userId
+      properties:
+        number:
+          type: string
+        holderName:
+          type: string
+        expirationDate:
+          type: string
+          format: date
+        userId:
+          type: integer
+
+    CardUpdateRequest:
+      type: object
+      properties:
+        holderName:
+          type: string
+        expirationDate:
+          type: string
+          format: date
+
+    CardStatusUpdateRequest:
+      type: object
+      required:
+        - status
+        - reason
+      properties:
+        status:
+          type: string
+          enum: [ACTIVE, BLOCKED, INACTIVE]
+        reason:
+          type: string
+
+    CardResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        number:
+          type: string
+        holderName:
+          type: string
+        expirationDate:
+          type: string
+          format: date
+        status:
+          type: string
+        userId:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    PageOfCards:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/CardResponse'
+        pageNumber:
+          type: integer
+        pageSize:
+          type: integer
+        totalElements:
+          type: integer
+        totalPages:
+          type: integer
+
+paths:
+  /auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: User registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Login and get JWT token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Successful authentication
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+
+  /cards:
+    post:
+      tags:
+        - Cards
+      summary: Create a new card (Admin only)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CardCreateRequest'
+      responses:
+        '201':
+          description: Card created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CardResponse'
+    get:
+      tags:
+        - Cards
+      summary: Get all cards (Admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+        - in: query
+          name: size
+          schema:
+            type: integer
+        - in: query
+          name: sort
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Paginated cards
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageOfCards'
+
+  /cards/my:
+    get:
+      tags:
+        - Cards
+      summary: Get current user's cards
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+        - in: query
+          name: size
+          schema:
+            type: integer
+        - in: query
+          name: sort
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Paginated user cards
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageOfCards'
+
+  /cards/{id}:
+    get:
+      tags:
+        - Cards
+      summary: Get card by ID
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Card details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CardResponse'
+    put:
+      tags:
+        - Cards
+      summary: Update card
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CardUpdateRequest'
+      responses:
+        '200':
+          description: Updated card
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CardResponse'
+    delete:
+      tags:
+        - Cards
+      summary: Delete card (Admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Card deleted
+
+  /cards/user/{userId}:
+    get:
+      tags:
+        - Cards
+      summary: Get user's cards (Admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - in: query
+          name: page
+          schema:
+            type: integer
+        - in: query
+          name: size
+          schema:
+            type: integer
+        - in: query
+          name: sort
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Paginated cards
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageOfCards'
+
+  /cards/status/{status}:
+    get:
+      tags:
+        - Cards
+      summary: Get cards by status (Admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [ACTIVE, BLOCKED, INACTIVE]
+        - in: query
+          name: page
+          schema:
+            type: integer
+        - in: query
+          name: size
+          schema:
+            type: integer
+        - in: query
+          name: sort
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Paginated cards by status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageOfCards'
+
+  /cards/{id}/status:
+    patch:
+      tags:
+        - Cards
+      summary: Update card status
