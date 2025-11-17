@@ -5,13 +5,19 @@ info:
   description: Authentication and card management endpoints.
 
 servers:
-  - url: /api/v1
+  - url: http://localhost:8080
 
 tags:
   - name: Authentication
     description: Authentication and registration endpoints
-  - name: Cards
-    description: Card management endpoints
+  - name: User cards
+    description: User card management endpoints
+  - name: User transfers
+    description: User transfer management endpoints
+  - name: Admin cards
+    description: Admin card management endpoints
+  - name: Admin users
+    description: Admin user management endpoints
 
 components:
   securitySchemes:
@@ -24,21 +30,29 @@ components:
     RegisterRequest:
       type: object
       required:
+        - username
         - email
         - password
         - firstName
         - lastName
       properties:
+        username:
+          type: string
+          example: john_doe
         email:
           type: string
           format: email
+          example: user@example.com
         password:
           type: string
           format: password
+          example: "123456"
         firstName:
           type: string
+          example: John
         lastName:
           type: string
+          example: Doe
 
     LoginRequest:
       type: object
@@ -49,48 +63,77 @@ components:
         email:
           type: string
           format: email
+          example: user@example.com
         password:
           type: string
           format: password
+          example: "123456"
 
     AuthResponse:
       type: object
       properties:
         token:
           type: string
-        tokenType:
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type:
           type: string
           example: Bearer
-        expiresIn:
+        userId:
           type: integer
-          description: Token expiration in seconds
+          example: 1234
+        username:
+          type: string
+          example: john_doe
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        role:
+          type: string
+          example: USER
 
     CardCreateRequest:
       type: object
       required:
-        - number
-        - holderName
-        - expirationDate
+        - cardNumber
+        - cardHolder
+        - expiryDate
         - userId
       properties:
-        number:
+        cardNumber:
           type: string
-        holderName:
+          example: "4532123456789012"
+          description: 13-19 digit card number
+        cardHolder:
           type: string
-        expirationDate:
+          example: "John Doe"
+        expiryDate:
           type: string
           format: date
+          example: "2025-11-12"
+          description: Card expiration date
+        cvv:
+          type: string
+          example: "123"
+          description: 3-4 digit security code
         userId:
           type: integer
+          example: 1234
 
     CardUpdateRequest:
       type: object
       properties:
-        holderName:
+        cardHolder:
           type: string
-        expirationDate:
+          example: "John Doe"
+        expiryDate:
           type: string
           format: date
+          example: "2025-11-12"
+        status:
+          type: string
+          enum: [ACTIVE, BLOCKED, INACTIVE]
+          example: BLOCKED
 
     CardStatusUpdateRequest:
       type: object
@@ -101,31 +144,49 @@ components:
         status:
           type: string
           enum: [ACTIVE, BLOCKED, INACTIVE]
+          example: BLOCKED
         reason:
           type: string
+          example: "Card blocked due to suspicious activity"
 
     CardResponse:
       type: object
       properties:
         id:
           type: integer
-        number:
+          example: 1
+          description: Unique card identifier
+        cardNumberMasked:
           type: string
-        holderName:
+          example: "****9012"
+          description: Masked card number showing only last 4 digits
+        cardHolder:
           type: string
-        expirationDate:
+          example: "John Doe"
+        expiryDate:
           type: string
           format: date
+          example: "2025-11-12"
         status:
           type: string
+          enum: [ACTIVE, BLOCKED, INACTIVE]
+          example: ACTIVE
         userId:
           type: integer
+          example: 1234
+        userName:
+          type: string
+          example: john_doe
         createdAt:
           type: string
           format: date-time
+          description: ISO 8601 timestamp
+          example: "2024-01-15T14:30:00Z"
         updatedAt:
           type: string
           format: date-time
+          description: ISO 8601 timestamp
+          example: "2024-01-15T14:30:00Z"
 
     PageOfCards:
       type: object
@@ -136,19 +197,223 @@ components:
             $ref: '#/components/schemas/CardResponse'
         pageNumber:
           type: integer
+          example: 0
+          description: Current page number
         pageSize:
           type: integer
+          example: 10
+          description: Number of items per page
         totalElements:
           type: integer
+          example: 1
+          description: Total number of items
         totalPages:
           type: integer
+          example: 1
+          description: Total number of pages
+        isFirst:
+          type: boolean
+          example: true
+          description: Whether this is the first page
+        isLast:
+          type: boolean
+          example: true
+          description: Whether this is the last page
+
+    PageOfTransfers:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/TransferResponse'
+        pageNumber:
+          type: integer
+          example: 0
+        pageSize:
+          type: integer
+          example: 10
+        totalElements:
+          type: integer
+          example: 1
+        totalPages:
+          type: integer
+          example: 1
+        isFirst:
+          type: boolean
+          example: true
+        isLast:
+          type: boolean
+          example: true
+
+    PageOfUsers:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserResponse'
+        pageNumber:
+          type: integer
+          example: 0
+        pageSize:
+          type: integer
+          example: 10
+        totalElements:
+          type: integer
+          example: 1
+        totalPages:
+          type: integer
+          example: 1
+        isFirst:
+          type: boolean
+          example: true
+        isLast:
+          type: boolean
+          example: true
+
+    TransferRequest:
+      type: object
+      required:
+        - fromCardId
+        - toCardId
+        - amount
+      properties:
+        fromCardId:
+          type: integer
+          format: int64
+          description: Source card ID
+          example: 12345
+        toCardId:
+          type: integer
+          format: int64
+          description: Destination card ID
+          example: 67890
+        amount:
+          type: number
+          format: decimal
+          minimum: 0.01
+          description: Transfer amount (must be > 0)
+          example: 150.50
+        description:
+          type: string
+          maxLength: 255
+          description: Optional transfer description
+          example: "Monthly rent payment"
+
+    TransferResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        fromCardId:
+          type: integer
+          format: int64
+          example: 12345
+        fromCardNumberMasked:
+          type: string
+          description: Masked source card number (e.g., ****1234)
+          example: "****1234"
+        toCardId:
+          type: integer
+          format: int64
+          example: 67890
+        toCardNumberMasked:
+          type: string
+          description: Masked destination card number (e.g., ****5678)
+          example: "****5678"
+        amount:
+          type: number
+          format: decimal
+          example: 150.50
+        status:
+          type: string
+          description: Transfer status (e.g., PENDING, COMPLETED, FAILED)
+          example: "COMPLETED"
+        description:
+          type: string
+          example: "Monthly rent payment"
+        userId:
+          type: integer
+          format: int64
+          example: 101
+        createdAt:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp
+          example: "2024-01-15T14:30:00Z"
+
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 101
+        username:
+          type: string
+          example: "johndoe"
+        email:
+          type: string
+          format: email
+          example: "john.doe@example.com"
+        firstName:
+          type: string
+          example: "John"
+        lastName:
+          type: string
+          example: "Doe"
+        role:
+          type: string
+          enum: [USER, ADMIN]
+          example: "USER"
+        enabled:
+          type: boolean
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp
+          example: "2023-06-01T10:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp
+          example: "2024-01-15T14:30:00Z"
+
+    UserUpdateRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          description: Updated email address
+          example: "new.email@example.com"
+        firstName:
+          type: string
+          example: "John"
+        lastName:
+          type: string
+          example: "Doe"
+        role:
+          type: string
+          enum: [USER, ADMIN]
+          description: User role (admin only)
+          example: "USER"
+        enabled:
+          type: boolean
+          description: Account status (admin only)
+          example: true
 
 paths:
-  /auth/register:
+  /api/v1/guest/register:
     post:
       tags:
         - Authentication
       summary: Register a new user
+      operationId: registerUser
       requestBody:
         required: true
         content:
@@ -157,17 +422,22 @@ paths:
               $ref: '#/components/schemas/RegisterRequest'
       responses:
         '201':
-          description: User registered
+          description: User registered successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Invalid input data
+        '409':
+          description: Username or email already exists
 
-  /auth/login:
+  /api/v1/guest/login:
     post:
       tags:
         - Authentication
       summary: Login and get JWT token
+      operationId: loginUser
       requestBody:
         required: true
         content:
@@ -181,12 +451,160 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Invalid credentials
 
-  /cards:
+  /api/v1/users/cards:
+    get:
+      tags:
+        - User cards
+      summary: Get current user's cards
+      operationId: getUserCards
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          description: Page number (0-based)
+        - in: query
+          name: size
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+          description: Number of items per page
+        - in: query
+          name: sort
+          schema:
+            type: string
+            example: "createdAt,desc"
+          description: Sort criteria (e.g., field,asc|desc)
+      responses:
+        '200':
+          description: Paginated user cards
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageOfCards'
+        '401':
+          description: Unauthorized
+
+  /api/v1/user/cards/{id}/status:
+    patch:
+      tags:
+        - User cards
+      summary: Request card block
+      operationId: blockUserCard
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: Card ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CardStatusUpdateRequest'
+      responses:
+        '200':
+          description: Card status updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CardResponse'
+        '403':
+          description: You don't have access to this card
+        '404':
+          description: Card not found
+
+  /api/v1/user/transfers:
     post:
       tags:
-        - Cards
+        - User transfers
+      summary: Execute transfer between own cards
+      operationId: createTransfer
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransferRequest'
+      responses:
+        '201':
+          description: Transfer executed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferResponse'
+        '400':
+          description: Card not active
+        '403':
+          description: You can transfer only to your own different cards
+        '404':
+          description: Card not found
+        '406':
+          description: Insufficient balance
+        '409':
+          description: Cannot transfer to the same card and transfer amount must be positive
+
+    get:
+      tags:
+        - User transfers
+      summary: Get current user's transfers
+      operationId: getUserTransfers
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          description: Page number (0-based)
+        - in: query
+          name: size
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+          description: Number of items per page
+        - in: query
+          name: sort
+          schema:
+            type: string
+            example: "createdAt,desc"
+          description: Sort criteria (e.g., field,asc|desc)
+      responses:
+        '200':
+          description: Paginated user transfers
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageOfTransfers'
+        '401':
+          description: Unauthorized
+
+  /api/v1/admin/cards:
+    post:
+      tags:
+        - Admin cards
       summary: Create a new card (Admin only)
+      operationId: createCard
       security:
         - BearerAuth: []
       requestBody:
@@ -197,15 +615,23 @@ paths:
               $ref: '#/components/schemas/CardCreateRequest'
       responses:
         '201':
-          description: Card created
+          description: Card created successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/CardResponse'
+        '400':
+          description: Invalid input data
+        '409':
+          description: Card number already exists
+        '403':
+          description: Admin access required
+
     get:
       tags:
-        - Cards
+        - Admin cards
       summary: Get all cards (Admin only)
+      operationId: getAllCards
       security:
         - BearerAuth: []
       parameters:
@@ -213,14 +639,23 @@ paths:
           name: page
           schema:
             type: integer
+            minimum: 0
+            default: 0
+          description: Page number (0-based)
         - in: query
           name: size
           schema:
             type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+          description: Number of items per page
         - in: query
           name: sort
           schema:
             type: string
+            example: "createdAt,desc"
+          description: Sort criteria (e.g., field,asc|desc)
       responses:
         '200':
           description: Paginated cards
@@ -228,59 +663,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PageOfCards'
+        '403':
+          description: Admin access required
 
-  /cards/my:
-    get:
-      tags:
-        - Cards
-      summary: Get current user's cards
-      security:
-        - BearerAuth: []
-      parameters:
-        - in: query
-          name: page
-          schema:
-            type: integer
-        - in: query
-          name: size
-          schema:
-            type: integer
-        - in: query
-          name: sort
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Paginated user cards
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PageOfCards'
-
-  /cards/{id}:
-    get:
-      tags:
-        - Cards
-      summary: Get card by ID
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: Card details
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CardResponse'
+  /api/v1/admin/cards/{id}:
     put:
       tags:
-        - Cards
-      summary: Update card
+        - Admin cards
+      summary: Update card details (Admin only)
+      operationId: updateCard
       security:
         - BearerAuth: []
       parameters:
@@ -289,6 +680,8 @@ paths:
           required: true
           schema:
             type: integer
+            format: int64
+          description: Card ID
       requestBody:
         required: true
         content:
@@ -297,15 +690,23 @@ paths:
               $ref: '#/components/schemas/CardUpdateRequest'
       responses:
         '200':
-          description: Updated card
+          description: Card updated successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/CardResponse'
+        '400':
+          description: Invalid input data
+        '403':
+          description: Admin access required
+        '404':
+          description: Card not found
+
     delete:
       tags:
-        - Cards
+        - Admin cards
       summary: Delete card (Admin only)
+      operationId: deleteCard
       security:
         - BearerAuth: []
       parameters:
@@ -314,79 +715,194 @@ paths:
           required: true
           schema:
             type: integer
+            format: int64
+          description: Card ID
       responses:
         '204':
-          description: Card deleted
+          description: Card deleted successfully
+        '403':
+          description: Admin access required
+        '404':
+          description: Card not found
 
-  /cards/user/{userId}:
-    get:
-      tags:
-        - Cards
-      summary: Get user's cards (Admin only)
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: userId
-          in: path
-          required: true
-          schema:
-            type: integer
-        - in: query
-          name: page
-          schema:
-            type: integer
-        - in: query
-          name: size
-          schema:
-            type: integer
-        - in: query
-          name: sort
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Paginated cards
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PageOfCards'
-
-  /cards/status/{status}:
-    get:
-      tags:
-        - Cards
-      summary: Get cards by status (Admin only)
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: status
-          in: path
-          required: true
-          schema:
-            type: string
-            enum: [ACTIVE, BLOCKED, INACTIVE]
-        - in: query
-          name: page
-          schema:
-            type: integer
-        - in: query
-          name: size
-          schema:
-            type: integer
-        - in: query
-          name: sort
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Paginated cards by status
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PageOfCards'
-
-  /cards/{id}/status:
+  /api/v1/admin/cards/{id}/status:
     patch:
       tags:
-        - Cards
-      summary: Update card status
+        - Admin cards
+      summary: Update card status (Admin only)
+      operationId: updateCardStatus
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: Card ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CardStatusUpdateRequest'
+      responses:
+        '200':
+          description: Card status updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CardResponse'
+        '400':
+          description: Invalid input data
+        '403':
+          description: Admin access required
+        '404':
+          description: Card not found
+
+  /api/v1/admin/users:
+    get:
+      tags:
+        - Admin users
+      summary: Get all users (Admin only)
+      operationId: getAllUsers
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          description: Page number (0-based)
+        - in: query
+          name: size
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+          description: Number of items per page
+        - in: query
+          name: sort
+          schema:
+            type: string
+            example: "createdAt,desc"
+          description: Sort criteria (e.g., field,asc|desc)
+      responses:
+        '200':
+          description: Paginated users
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageOfUsers'
+        '403':
+          description: Admin access required
+
+  /api/v1/admin/users/{id}:
+    put:
+      tags:
+        - Admin users
+      summary: Update user details (Admin only)
+      operationId: updateUser
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: User ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdateRequest'
+      responses:
+        '200':
+          description: User updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          description: Invalid input data
+        '403':
+          description: Admin access required
+        '404':
+          description: User not found
+
+    delete:
+      tags:
+        - Admin users
+      summary: Delete user (Admin only)
+      operationId: deleteUser
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: User ID
+      responses:
+        '204':
+          description: User deleted successfully
+        '403':
+          description: Admin access required
+        '404':
+          description: User not found
+
+  /api/v1/admin/users/{id}/status:
+    patch:
+      tags:
+        - Admin users
+      summary: Update user status (Admin only)
+      operationId: updateUserStatus
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: User ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - enabled
+              properties:
+                enabled:
+                  type: boolean
+                  description: Enable or disable user account
+                  example: true
+                reason:
+                  type: string
+                  description: Reason for status change
+                  example: "Account suspended due to policy violation"
+      responses:
+        '200':
+          description: User status updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          description: Invalid input data
+        '403':
+          description: Admin access required
+        '404':
+          description: User not found
