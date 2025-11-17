@@ -200,7 +200,9 @@ class AdminCardControllerTest {
                 .andExpect(jsonPath("$.pageNumber").value(0))
                 .andExpect(jsonPath("$.pageSize").value(1))
                 .andExpect(jsonPath("$.totalElements").value(1))
-                .andExpect(jsonPath("$.totalPages").value(1));
+                .andExpect(jsonPath("$.totalPages").value(1))
+                .andExpect(jsonPath("$.isFirst").value(true))
+                .andExpect(jsonPath("$.isLast").value(true));
     }
 
     @Test
