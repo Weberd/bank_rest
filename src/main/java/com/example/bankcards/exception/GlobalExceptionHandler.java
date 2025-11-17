@@ -45,7 +45,12 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(InsufficientBalanceException.class)
     public ResponseEntity<ErrorResponse> handleInsufficientBalance(InsufficientBalanceException ex) {
-        return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
+        return buildResponse(HttpStatus.NOT_ACCEPTABLE, ex.getMessage());
+    }
+
+    @ExceptionHandler(CardNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleCardNotFound(CardNotFoundException ex) {
+        return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
     @ExceptionHandler(CardNotActiveException.class)
@@ -68,7 +73,6 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.FORBIDDEN, ex.getMessage());
     }
 
-
     @ExceptionHandler(DuplicateResourceException.class)
     public ResponseEntity<ErrorResponse> handleDuplicateResource(DuplicateResourceException ex) {
         return buildResponse(HttpStatus.CONFLICT, ex.getMessage());
@@ -76,7 +80,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(InvalidTransferException.class)
     public ResponseEntity<ErrorResponse> handleInvalidTransfer(InvalidTransferException ex) {
-        return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
+        return buildResponse(HttpStatus.CONFLICT, ex.getMessage());
     }
 
     @ExceptionHandler(BadCredentialsException.class)
