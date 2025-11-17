@@ -48,8 +48,8 @@ public class UserCardController {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         Long userId = getUserId(authentication);
         CardStatusUpdateRequest request = new CardStatusUpdateRequest("BLOCKED", "User requested block");
-        CardResponse response = cardCommandService.updateCardStatus(id, request, userId);
-        return ResponseEntity.ok(response);
+        cardCommandService.updateCardStatus(id, request, userId);
+        return ResponseEntity.noContent().build();
     }
 
     private Long getUserId(Authentication authentication) {

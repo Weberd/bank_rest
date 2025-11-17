@@ -138,6 +138,6 @@ class UserCardControllerTest {
         mockMvc.perform(patch("/api/v1/user/cards/1/status")
                         .with(csrf()))
                 .andDo(print())
-                .andExpect(status().isOk());
+                .andExpect(status().isNoContent());
     }
 }
