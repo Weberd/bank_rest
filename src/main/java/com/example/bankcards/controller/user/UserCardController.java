@@ -1,59 +1,55 @@
-package com.example.bankcards.controller;
+package com.example.bankcards.controller.user;
 
-import com.example.bankcards.dto.transfer.TransferRequest;
-import com.example.bankcards.dto.transfer.TransferResponse;
+import com.example.bankcards.dto.card.CardResponse;
+import com.example.bankcards.dto.card.CardStatusUpdateRequest;
 import com.example.bankcards.security.CustomUserDetailsService;
-import com.example.bankcards.service.contracts.TransferServiceInterface;
+import com.example.bankcards.service.contracts.CardCommandServiceInterface;
+import com.example.bankcards.service.contracts.CardQueryServiceInterface;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
-import java.nio.file.AccessDeniedException;
-
 @RestController
-@RequestMapping("/api/v1/transfers")
+@RequestMapping("/api/v1/user/cards")
 @RequiredArgsConstructor
 @SecurityRequirement(name = "Bearer Authentication")
-@Tag(name = "Transfers", description = "Transfer management endpoints")
-public class TransferController {
+@Tag(name = "Cards", description = "User card management endpoints")
+public class UserCardController {
 
-    private final TransferServiceInterface transferService;
+    private final CardCommandServiceInterface cardCommandService;
+    private final CardQueryServiceInterface cardQueryService;
     private final CustomUserDetailsService userDetailsService;
 
-    @PostMapping
+    @GetMapping
     @PreAuthorize("hasRole('USER')")
-    @Operation(summary = "Execute transfer between own cards")
-    public ResponseEntity<TransferResponse> executeTransfer(
-            @Valid @RequestBody TransferRequest request) {
-
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        Long userId = getUserId(authentication);
-        TransferResponse response = transferService.executeTransfer(request, userId);
-        return new ResponseEntity<>(response, HttpStatus.CREATED);
-    }
-
-    @GetMapping("/my")
-    @PreAuthorize("hasRole('USER')")
-    @Operation(summary = "Get current user's transfers")
-    public ResponseEntity<Page<TransferResponse>> getMyTransfers(
+    @Operation(summary = "Get current user's cards")
+    public ResponseEntity<Page<CardResponse>> getMyCards(
             @PageableDefault(size = 10, sort = "createdAt") Pageable pageable) {
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         Long userId = getUserId(authentication);
-        Page<TransferResponse> transfers = transferService.getUserTransfers(userId, pageable);
-        return ResponseEntity.ok(transfers);
+        Page<CardResponse> cards = cardQueryService.getUserCards(userId, pageable);
+        return ResponseEntity.ok(cards);
+    }
+
+    @PatchMapping("/{id}/status")
+    @PreAuthorize("hasRole('USER')")
+    @Operation(summary = "Request card block")
+    public ResponseEntity<CardResponse> blockCard(@PathVariable Long id) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Long userId = getUserId(authentication);
+        CardStatusUpdateRequest request = new CardStatusUpdateRequest("BLOCKED", "User requested block");
+        CardResponse response = cardCommandService.updateCardStatus(id, request, userId);
+        return ResponseEntity.ok(response);
     }
 
     private Long getUserId(Authentication authentication) {

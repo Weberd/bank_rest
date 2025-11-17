@@ -1,6 +1,7 @@
 package com.example.bankcards.controller;
 
 import com.example.bankcards.config.SecurityConfig;
+import com.example.bankcards.controller.admin.AdminCardController;
 import com.example.bankcards.dto.card.CardCreateRequest;
 import com.example.bankcards.dto.card.CardResponse;
 import com.example.bankcards.dto.card.CardStatusUpdateRequest;
@@ -21,8 +22,8 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithAnonymousUser;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -32,6 +33,7 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 
+import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
@@ -40,10 +42,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(CardController.class)
+@WebMvcTest(AdminCardController.class)
 @AutoConfigureMockMvc(addFilters = false)
 @Import(SecurityConfig.class)
-class CardControllerTest {
+class AdminCardControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -114,7 +116,7 @@ class CardControllerTest {
     void createCard_Success() throws Exception {
         when(cardCommandService.createCard(any(CardCreateRequest.class))).thenReturn(cardResponse);
 
-        mockMvc.perform(post("/api/v1/cards")
+        mockMvc.perform(post("/api/v1/admin/cards")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(createRequest)))
@@ -130,7 +132,7 @@ class CardControllerTest {
     @Test
     @WithMockUser(roles = "USER")
     void createCard_ForbiddenForUser() throws Exception {
-        mockMvc.perform(post("/api/v1/cards")
+        mockMvc.perform(post("/api/v1/admin/cards")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(createRequest)))
@@ -143,7 +145,7 @@ class CardControllerTest {
     void createCard_InvalidCardNumber() throws Exception {
         createRequest.setCardNumber("12345");
 
-        mockMvc.perform(post("/api/v1/cards")
+        mockMvc.perform(post("/api/v1/admin/cards")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(createRequest)))
@@ -157,7 +159,7 @@ class CardControllerTest {
     void createCard_InvalidCvv() throws Exception {
         createRequest.setCvv("12");
 
-        mockMvc.perform(post("/api/v1/cards")
+        mockMvc.perform(post("/api/v1/admin/cards")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(createRequest)))
@@ -171,7 +173,7 @@ class CardControllerTest {
     void createCard_MissingRequiredFields() throws Exception {
         CardCreateRequest emptyRequest = new CardCreateRequest();
 
-        mockMvc.perform(post("/api/v1/cards")
+        mockMvc.perform(post("/api/v1/admin/cards")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(emptyRequest)))
@@ -183,26 +185,6 @@ class CardControllerTest {
     }
 
     @Test
-    @WithMockUser
-    void getMyCards_Success() throws Exception {
-        List<CardResponse> cards = Collections.singletonList(cardResponse);
-        Page<CardResponse> page = new PageImpl<>(cards, PageRequest.of(0, 10), 1);
-
-        when(cardQueryService.getUserCards(anyLong(), any())).thenReturn(page);
-
-        mockMvc.perform(get("/api/v1/cards/my")
-                        .param("page", "0")
-                        .param("size", "10")
-                        .with(csrf()))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content").isArray())
-                .andExpect(jsonPath("$.content[0].id").value(1))
-                .andExpect(jsonPath("$.totalElements").value(1))
-                .andExpect(jsonPath("$.size").value(10));
-    }
-
-    @Test
     @WithMockUser(roles = "ADMIN")
     void getAllCards_Success() throws Exception {
         List<CardResponse> cards = Collections.singletonList(cardResponse);
@@ -210,17 +192,21 @@ class CardControllerTest {
 
         when(cardQueryService.getAllCards(any())).thenReturn(page);
 
-        mockMvc.perform(get("/api/v1/cards")
+        mockMvc.perform(get("/api/v1/admin/cards")
                         .with(csrf()))
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content").isArray());
+                .andExpect(jsonPath("$.content", hasSize(1)))
+                .andExpect(jsonPath("$.pageNumber").value(0))
+                .andExpect(jsonPath("$.pageSize").value(1))
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.totalPages").value(1));
     }
 
     @Test
     @WithMockUser(roles = "USER")
     void getAllCards_ForbiddenForUser() throws Exception {
-        mockMvc.perform(get("/api/v1/cards")
+        mockMvc.perform(get("/api/v1/admin/cards")
                         .with(csrf()))
                 .andDo(print())
                 .andExpect(status().isForbidden());
@@ -232,7 +218,7 @@ class CardControllerTest {
         when(cardCommandService.updateCard(eq(1L), any(CardUpdateRequest.class), anyLong()))
                 .thenReturn(cardResponse);
 
-        mockMvc.perform(put("/api/v1/cards/1")
+        mockMvc.perform(put("/api/v1/admin/cards/1")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateRequest)))
@@ -247,7 +233,7 @@ class CardControllerTest {
         when(cardCommandService.updateCardStatus(eq(1L), any(CardStatusUpdateRequest.class), anyLong()))
                 .thenReturn(cardResponse);
 
-        mockMvc.perform(patch("/api/v1/cards/1/status")
+        mockMvc.perform(patch("/api/v1/admin/cards/1/status")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(statusUpdateRequest)))
@@ -256,11 +242,11 @@ class CardControllerTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ADMIN")
     void updateCardStatus_InvalidStatus() throws Exception {
         statusUpdateRequest.setStatus("INVALID_STATUS");
 
-        mockMvc.perform(patch("/api/v1/cards/1/status")
+        mockMvc.perform(patch("/api/v1/admin/cards/1/status")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(statusUpdateRequest)))
@@ -270,44 +256,11 @@ class CardControllerTest {
     }
 
     @Test
-    @WithMockUser
-    void blockCard_Success() throws Exception {
-        when(cardCommandService.updateCardStatus(eq(1L), any(CardStatusUpdateRequest.class), anyLong()))
-                .thenReturn(cardResponse);
-
-        mockMvc.perform(post("/api/v1/cards/1/block")
-                        .with(csrf()))
-                .andDo(print())
-                .andExpect(status().isOk());
-    }
-
-    @Test
-    @WithMockUser(roles = "ADMIN")
-    void activateCard_Success() throws Exception {
-        when(cardCommandService.updateCardStatus(eq(1L), any(CardStatusUpdateRequest.class), anyLong()))
-                .thenReturn(cardResponse);
-
-        mockMvc.perform(post("/api/v1/cards/1/activate")
-                        .with(csrf()))
-                .andDo(print())
-                .andExpect(status().isOk());
-    }
-
-    @Test
-    @WithMockUser(roles = "USER")
-    void activateCard_ForbiddenForUser() throws Exception {
-        mockMvc.perform(post("/api/v1/cards/1/activate")
-                        .with(csrf()))
-                .andDo(print())
-                .andExpect(status().isForbidden());
-    }
-
-    @Test
     @WithMockUser(roles = "ADMIN")
     void deleteCard_Success() throws Exception {
         doNothing().when(cardCommandService).deleteCard(eq(1L), anyLong());
 
-        mockMvc.perform(delete("/api/v1/cards/1")
+        mockMvc.perform(delete("/api/v1/admin/cards/1")
                         .with(csrf()))
                 .andDo(print())
                 .andExpect(status().isNoContent());
@@ -316,19 +269,20 @@ class CardControllerTest {
     @Test
     @WithMockUser(roles = "USER")
     void deleteCard_ForbiddenForUser() throws Exception {
-        mockMvc.perform(delete("/api/v1/cards/1")
+        mockMvc.perform(delete("/api/v1/admin/cards/1")
                         .with(csrf()))
                 .andDo(print())
                 .andExpect(status().isForbidden());
     }
 
     @Test
+    @WithAnonymousUser
     void createCard_Unauthorized() throws Exception {
-        mockMvc.perform(post("/api/v1/cards")
+        mockMvc.perform(post("/api/v1/admin/cards")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(createRequest)))
                 .andDo(print())
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isForbidden());
     }
 }

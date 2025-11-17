@@ -1,5 +1,6 @@
 package com.example.bankcards.controller;
 
+import com.example.bankcards.controller.guest.AuthController;
 import com.example.bankcards.dto.auth.AuthResponse;
 import com.example.bankcards.dto.auth.LoginRequest;
 import com.example.bankcards.dto.auth.RegisterRequest;
@@ -71,7 +72,7 @@ class AuthControllerTest {
     void register_Success() throws Exception {
         when(authService.register(any(RegisterRequest.class))).thenReturn(authResponse);
 
-        mockMvc.perform(post("/api/v1/auth/register")
+        mockMvc.perform(post("/api/v1/guest/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(registerRequest)))
                 .andDo(print())
@@ -88,7 +89,7 @@ class AuthControllerTest {
     void register_InvalidUsername_TooShort() throws Exception {
         registerRequest.setUsername("ab");
 
-        mockMvc.perform(post("/api/v1/auth/register")
+        mockMvc.perform(post("/api/v1/guest/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(registerRequest)))
                 .andDo(print())
@@ -101,7 +102,7 @@ class AuthControllerTest {
     void register_InvalidEmail() throws Exception {
         registerRequest.setEmail("invalid-email");
 
-        mockMvc.perform(post("/api/v1/auth/register")
+        mockMvc.perform(post("/api/v1/guest/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(registerRequest)))
                 .andDo(print())
@@ -113,7 +114,7 @@ class AuthControllerTest {
     void register_MissingPassword() throws Exception {
         registerRequest.setPassword(null);
 
-        mockMvc.perform(post("/api/v1/auth/register")
+        mockMvc.perform(post("/api/v1/guest/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(registerRequest)))
                 .andDo(print())
@@ -125,7 +126,7 @@ class AuthControllerTest {
     void register_PasswordTooShort() throws Exception {
         registerRequest.setPassword("12345");
 
-        mockMvc.perform(post("/api/v1/auth/register")
+        mockMvc.perform(post("/api/v1/guest/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(registerRequest)))
                 .andDo(print())
@@ -137,7 +138,7 @@ class AuthControllerTest {
     void login_Success() throws Exception {
         when(authService.login(any(LoginRequest.class))).thenReturn(authResponse);
 
-        mockMvc.perform(post("/api/v1/auth/login")
+        mockMvc.perform(post("/api/v1/guest/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(loginRequest)))
                 .andDo(print())
@@ -152,7 +153,7 @@ class AuthControllerTest {
     void login_MissingUsername() throws Exception {
         loginRequest.setUsername(null);
 
-        mockMvc.perform(post("/api/v1/auth/login")
+        mockMvc.perform(post("/api/v1/guest/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(loginRequest)))
                 .andDo(print())
@@ -164,7 +165,7 @@ class AuthControllerTest {
     void login_MissingPassword() throws Exception {
         loginRequest.setPassword(null);
 
-        mockMvc.perform(post("/api/v1/auth/login")
+        mockMvc.perform(post("/api/v1/guest/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(loginRequest)))
                 .andDo(print())
@@ -174,7 +175,7 @@ class AuthControllerTest {
 
     @Test
     void login_EmptyRequestBody() throws Exception {
-        mockMvc.perform(post("/api/v1/auth/login")
+        mockMvc.perform(post("/api/v1/guest/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andDo(print())

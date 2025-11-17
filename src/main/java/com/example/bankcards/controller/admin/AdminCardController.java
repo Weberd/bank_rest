@@ -1,5 +1,6 @@
-package com.example.bankcards.controller;
+package com.example.bankcards.controller.admin;
 
+import com.example.bankcards.dto.PageResponse;
 import com.example.bankcards.dto.card.CardCreateRequest;
 import com.example.bankcards.dto.card.CardResponse;
 import com.example.bankcards.dto.card.CardStatusUpdateRequest;
@@ -12,7 +13,6 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -24,11 +24,11 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/v1/cards")
+@RequestMapping("/api/v1/admin/cards")
 @RequiredArgsConstructor
 @SecurityRequirement(name = "Bearer Authentication")
-@Tag(name = "Cards", description = "Card management endpoints")
-public class CardController {
+@Tag(name = "Cards", description = "Admin card management endpoints")
+public class AdminCardController {
 
     private final CardCommandServiceInterface cardCommandService;
     private final CardQueryServiceInterface cardQueryService;
@@ -42,25 +42,13 @@ public class CardController {
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
-    @GetMapping("/my")
-    @PreAuthorize("hasRole('USER')")
-    @Operation(summary = "Get current user's cards")
-    public ResponseEntity<Page<CardResponse>> getMyCards(
-            @PageableDefault(size = 10, sort = "createdAt") Pageable pageable) {
-
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        Long userId = getUserId(authentication);
-        Page<CardResponse> cards = cardQueryService.getUserCards(userId, pageable);
-        return ResponseEntity.ok(cards);
-    }
-
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Get all cards (Admin only)")
-    public ResponseEntity<Page<CardResponse>> getAllCards(
+    public ResponseEntity<PageResponse<CardResponse>> getAllCards(
             @PageableDefault(size = 10, sort = "createdAt") Pageable pageable) {
         Page<CardResponse> cards = cardQueryService.getAllCards(pageable);
-        return ResponseEntity.ok(cards);
+        return ResponseEntity.ok(new PageResponse<>(cards));
     }
 
     @PutMapping("/{id}")
@@ -85,28 +73,6 @@ public class CardController {
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         Long userId = getUserId(authentication);
-        CardResponse response = cardCommandService.updateCardStatus(id, request, userId);
-        return ResponseEntity.ok(response);
-    }
-
-    @PostMapping("/{id}/block")
-    @PreAuthorize("hasRole('USER')")
-    @Operation(summary = "Request card block")
-    public ResponseEntity<CardResponse> blockCard(@PathVariable Long id) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        Long userId = getUserId(authentication);
-        CardStatusUpdateRequest request = new CardStatusUpdateRequest("BLOCKED", "User requested block");
-        CardResponse response = cardCommandService.updateCardStatus(id, request, userId);
-        return ResponseEntity.ok(response);
-    }
-
-    @PostMapping("/{id}/activate")
-    @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Activate card (Admin only)")
-    public ResponseEntity<CardResponse> activateCard(@PathVariable Long id) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        Long userId = getUserId(authentication);
-        CardStatusUpdateRequest request = new CardStatusUpdateRequest("ACTIVE", "Admin activated");
         CardResponse response = cardCommandService.updateCardStatus(id, request, userId);
         return ResponseEntity.ok(response);
     }

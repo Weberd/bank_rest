@@ -1,4 +1,4 @@
-package com.example.bankcards.controller;
+package com.example.bankcards.controller.admin;
 
 import com.example.bankcards.dto.user.UserResponse;
 import com.example.bankcards.dto.user.UserUpdateRequest;
@@ -19,11 +19,11 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/v1/users")
+@RequestMapping("/api/v1/admin/users")
 @RequiredArgsConstructor
 @SecurityRequirement(name = "Bearer Authentication")
-@Tag(name = "Users", description = "User management endpoints")
-public class UserController {
+@Tag(name = "Users", description = "Admin user management endpoints")
+public class AdminUserController {
 
     private final UserServiceInterface userService;
     private final CustomUserDetailsService userDetailsService;
@@ -35,16 +35,6 @@ public class UserController {
             @PageableDefault(size = 10, sort = "createdAt") Pageable pageable) {
         Page<UserResponse> users = userService.getAllUsers(pageable);
         return ResponseEntity.ok(users);
-    }
-
-    @PutMapping("/me")
-    @PreAuthorize("hasRole('USER')")
-    @Operation(summary = "Update current user profile")
-    public ResponseEntity<UserResponse> updateCurrentUser(@Valid @RequestBody UserUpdateRequest request) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        Long userId = getUserId(authentication);
-        UserResponse response = userService.updateUser(userId, request);
-        return ResponseEntity.ok(response);
     }
 
     @PutMapping("/{id}")
@@ -66,7 +56,7 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
-    @PatchMapping("/{id}/toggle-status")
+    @PatchMapping("/{id}/status")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Toggle user enabled/disabled status (Admin only)")
     public ResponseEntity<UserResponse> toggleUserStatus(@PathVariable Long id) {

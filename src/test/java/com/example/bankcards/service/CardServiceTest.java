@@ -5,7 +5,6 @@ import com.example.bankcards.dto.card.CardResponse;
 import com.example.bankcards.dto.card.CardStatusUpdateRequest;
 import com.example.bankcards.entity.Card;
 import com.example.bankcards.entity.User;
-import com.example.bankcards.exception.CardNotFoundException;
 import com.example.bankcards.exception.DuplicateResourceException;
 import com.example.bankcards.exception.InvalidCardException;
 import com.example.bankcards.exception.UnauthorizedException;
@@ -165,24 +164,5 @@ class CardServiceTest {
 
         verify(eventService, times(1)).recordCardDeletedEvent(1L, 1L);
         verify(cardRepository, times(1)).delete(testCard);
-    }
-
-    @Test
-    void getCardById_Success() {
-        when(cardRepository.findByIdAndUserId(1L, 1L)).thenReturn(Optional.of(testCard));
-        when(encryptionUtil.decrypt(anyString())).thenReturn("1234567890123456");
-        when(maskingUtil.maskCardNumber(anyString())).thenReturn("**** **** **** 3456");
-
-        CardResponse response = cardQueryService.getCardById(1L, 1L);
-
-        assertNotNull(response);
-        assertEquals("**** **** **** 3456", response.getCardNumberMasked());
-    }
-
-    @Test
-    void getCardById_NotFound() {
-        assertThrows(CardNotFoundException.class, () -> {
-            cardQueryService.getCardById(1L, 1L);
-        });
     }
 }

@@ -24,14 +24,6 @@ public class CardQueryService extends AbstractCardService implements CardQuerySe
 
     @Override
     @Transactional(readOnly = true)
-    public CardResponse getCardById(Long cardId, Long userId) {
-        Card card = cardRepository.findByIdAndUserId(cardId, userId)
-                .orElseThrow(() -> new CardNotFoundException(cardId));
-        return mapToResponse(card);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
     public Page<CardResponse> getAllCards(Pageable pageable) {
         return cardRepository.findAll(pageable).map(this::mapToResponse);
     }
@@ -40,17 +32,5 @@ public class CardQueryService extends AbstractCardService implements CardQuerySe
     @Transactional(readOnly = true)
     public Page<CardResponse> getUserCards(Long userId, Pageable pageable) {
         return cardRepository.findByUserId(userId, pageable).map(this::mapToResponse);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public Page<CardResponse> getCardsByStatus(Card.CardStatus status, Pageable pageable) {
-        return cardRepository.findByStatus(status, pageable).map(this::mapToResponse);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public Page<CardResponse> getUserCardsByStatus(Long userId, Card.CardStatus status, Pageable pageable) {
-        return cardRepository.findByUserIdAndStatus(userId, status, pageable).map(this::mapToResponse);
     }
 }

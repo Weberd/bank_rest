@@ -1,6 +1,7 @@
 package com.example.bankcards.controller;
 
 import com.example.bankcards.config.SecurityConfig;
+import com.example.bankcards.controller.admin.AdminUserController;
 import com.example.bankcards.dto.user.UserResponse;
 import com.example.bankcards.dto.user.UserUpdateRequest;
 import com.example.bankcards.entity.User;
@@ -35,10 +36,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(UserController.class)
+@WebMvcTest(AdminUserController.class)
 @AutoConfigureMockMvc(addFilters = false)
 @Import(SecurityConfig.class)
-class UserControllerTest {
+class AdminUserControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -97,7 +98,7 @@ class UserControllerTest {
 
         when(userService.getAllUsers(any())).thenReturn(page);
 
-        mockMvc.perform(get("/api/v1/users")
+        mockMvc.perform(get("/api/v1/admin/users")
                         .param("page", "0")
                         .param("size", "10")
                         .with(csrf()))
@@ -111,38 +112,10 @@ class UserControllerTest {
     @Test
     @WithMockUser(roles = "USER")
     void getAllUsers_ForbiddenForUser() throws Exception {
-        mockMvc.perform(get("/api/v1/users")
+        mockMvc.perform(get("/api/v1/admin/users")
                         .with(csrf()))
                 .andDo(print())
                 .andExpect(status().isForbidden());
-    }
-
-    @Test
-    @WithMockUser(roles = "USER")
-    void updateCurrentUser_Success() throws Exception {
-        when(userService.updateUser(anyLong(), any(UserUpdateRequest.class))).thenReturn(userResponse);
-
-        mockMvc.perform(put("/api/v1/users/me")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updateRequest)))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(1));
-    }
-
-    @Test
-    @WithMockUser
-    void updateCurrentUser_InvalidEmail() throws Exception {
-        updateRequest.setEmail("invalid-email");
-
-        mockMvc.perform(put("/api/v1/users/me")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updateRequest)))
-                .andDo(print())
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.errors.email").value("Invalid email format"));
     }
 
     @Test
@@ -150,7 +123,7 @@ class UserControllerTest {
     void updateUser_Success() throws Exception {
         when(userService.updateUser(eq(1L), any(UserUpdateRequest.class))).thenReturn(userResponse);
 
-        mockMvc.perform(put("/api/v1/users/1")
+        mockMvc.perform(put("/api/v1/admin/users/1")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateRequest)))
@@ -161,7 +134,7 @@ class UserControllerTest {
     @Test
     @WithMockUser(roles = "USER")
     void updateUser_ForbiddenForUser() throws Exception {
-        mockMvc.perform(put("/api/v1/users/1")
+        mockMvc.perform(put("/api/v1/admin/users/1")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateRequest)))
@@ -174,7 +147,7 @@ class UserControllerTest {
     void deleteUser_Success() throws Exception {
         doNothing().when(userService).deleteUser(eq(1L));
 
-        mockMvc.perform(delete("/api/v1/users/1")
+        mockMvc.perform(delete("/api/v1/admin/users/1")
                         .with(csrf()))
                 .andDo(print())
                 .andExpect(status().isNoContent());
@@ -183,7 +156,7 @@ class UserControllerTest {
     @Test
     @WithMockUser(roles = "USER")
     void deleteUser_ForbiddenForUser() throws Exception {
-        mockMvc.perform(delete("/api/v1/users/1")
+        mockMvc.perform(delete("/api/v1/admin/users/1")
                         .with(csrf()))
                 .andDo(print())
                 .andExpect(status().isForbidden());
@@ -199,7 +172,7 @@ class UserControllerTest {
 
         when(userService.toggleUserStatus(eq(1L))).thenReturn(disabledUser);
 
-        mockMvc.perform(patch("/api/v1/users/1/toggle-status")
+        mockMvc.perform(patch("/api/v1/admin/users/1/status")
                         .with(csrf()))
                 .andDo(print())
                 .andExpect(status().isOk())
@@ -209,36 +182,9 @@ class UserControllerTest {
     @Test
     @WithMockUser(roles = "USER")
     void toggleUserStatus_ForbiddenForUser() throws Exception {
-        mockMvc.perform(patch("/api/v1/users/1/toggle-status")
+        mockMvc.perform(patch("/api/v1/admin/users/1/status")
                         .with(csrf()))
                 .andDo(print())
                 .andExpect(status().isForbidden());
-    }
-
-    @Test
-    @WithMockUser
-    void updateCurrentUser_EmptyRequestBody() throws Exception {
-        mockMvc.perform(put("/api/v1/users/me")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{}"))
-                .andDo(print())
-                .andExpect(status().isOk());
-    }
-
-    @Test
-    @WithMockUser
-    void updateCurrentUser_PartialUpdate() throws Exception {
-        UserUpdateRequest partial = new UserUpdateRequest();
-        partial.setFirstName("OnlyFirstName");
-
-        when(userService.updateUser(anyLong(), any(UserUpdateRequest.class))).thenReturn(userResponse);
-
-        mockMvc.perform(put("/api/v1/users/me")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(partial)))
-                .andDo(print())
-                .andExpect(status().isOk());
     }
 }

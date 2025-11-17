@@ -1,4 +1,4 @@
-package com.example.bankcards.controller;
+package com.example.bankcards.controller.guest;
 
 import com.example.bankcards.dto.auth.AuthResponse;
 import com.example.bankcards.dto.auth.LoginRequest;
@@ -13,7 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/v1/auth")
+@RequestMapping("/api/v1/guest")
 @RequiredArgsConstructor
 @Tag(name = "Authentication", description = "Authentication and registration endpoints")
 public class AuthController {

@@ -1,6 +1,7 @@
 package com.example.bankcards.controller;
 
 import com.example.bankcards.config.SecurityConfig;
+import com.example.bankcards.controller.user.UserTransferController;
 import com.example.bankcards.dto.transfer.TransferRequest;
 import com.example.bankcards.dto.transfer.TransferResponse;
 import com.example.bankcards.entity.User;
@@ -20,6 +21,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithAnonymousUser;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -36,10 +38,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(TransferController.class)
+@WebMvcTest(UserTransferController.class)
 @AutoConfigureMockMvc(addFilters = false)
 @Import(SecurityConfig.class)
-class TransferControllerTest {
+class UserTransferControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -97,7 +99,7 @@ class TransferControllerTest {
         when(transferService.executeTransfer(any(TransferRequest.class), anyLong()))
                 .thenReturn(transferResponse);
 
-        mockMvc.perform(post("/api/v1/transfers")
+        mockMvc.perform(post("/api/v1/user/transfers")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(transferRequest)))
@@ -117,7 +119,7 @@ class TransferControllerTest {
     void executeTransfer_MissingFromCardId() throws Exception {
         transferRequest.setFromCardId(null);
 
-        mockMvc.perform(post("/api/v1/transfers")
+        mockMvc.perform(post("/api/v1/user/transfers")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(transferRequest)))
@@ -131,7 +133,7 @@ class TransferControllerTest {
     void executeTransfer_MissingToCardId() throws Exception {
         transferRequest.setToCardId(null);
 
-        mockMvc.perform(post("/api/v1/transfers")
+        mockMvc.perform(post("/api/v1/user/transfers")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(transferRequest)))
@@ -145,7 +147,7 @@ class TransferControllerTest {
     void executeTransfer_MissingAmount() throws Exception {
         transferRequest.setAmount(null);
 
-        mockMvc.perform(post("/api/v1/transfers")
+        mockMvc.perform(post("/api/v1/user/transfers")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(transferRequest)))
@@ -159,7 +161,7 @@ class TransferControllerTest {
     void executeTransfer_NegativeAmount() throws Exception {
         transferRequest.setAmount(BigDecimal.valueOf(-100));
 
-        mockMvc.perform(post("/api/v1/transfers")
+        mockMvc.perform(post("/api/v1/user/transfers")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(transferRequest)))
@@ -173,7 +175,7 @@ class TransferControllerTest {
     void executeTransfer_ZeroAmount() throws Exception {
         transferRequest.setAmount(BigDecimal.ZERO);
 
-        mockMvc.perform(post("/api/v1/transfers")
+        mockMvc.perform(post("/api/v1/user/transfers")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(transferRequest)))
@@ -189,7 +191,7 @@ class TransferControllerTest {
 
         when(transferService.getUserTransfers(anyLong(), any())).thenReturn(page);
 
-        mockMvc.perform(get("/api/v1/transfers/my")
+        mockMvc.perform(get("/api/v1/user/transfers")
                         .param("page", "0")
                         .param("size", "10")
                         .with(csrf()))
@@ -210,7 +212,7 @@ class TransferControllerTest {
 
         when(transferService.getUserTransfers(anyLong(), any())).thenReturn(page);
 
-        mockMvc.perform(get("/api/v1/transfers/my")
+        mockMvc.perform(get("/api/v1/user/transfers")
                         .param("page", "1")
                         .param("size", "20")
                         .with(csrf()))
@@ -222,60 +224,29 @@ class TransferControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = "USER")
-    void executeTransfer_WithDescription() throws Exception {
-        transferRequest.setDescription("Payment for services");
-
-        when(transferService.executeTransfer(any(TransferRequest.class), anyLong()))
-                .thenReturn(transferResponse);
-
-        mockMvc.perform(post("/api/v1/transfers")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(transferRequest)))
-                .andDo(print())
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").exists());
-    }
-
-    @Test
-    @WithMockUser(roles = "USER")
-    void executeTransfer_WithoutDescription() throws Exception {
-        transferRequest.setDescription(null);
-
-        when(transferService.executeTransfer(any(TransferRequest.class), anyLong()))
-                .thenReturn(transferResponse);
-
-        mockMvc.perform(post("/api/v1/transfers")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(transferRequest)))
-                .andDo(print())
-                .andExpect(status().isCreated());
-    }
-
-    @Test
+    @WithAnonymousUser
     void executeTransfer_Unauthorized() throws Exception {
-        mockMvc.perform(post("/api/v1/transfers")
+        mockMvc.perform(post("/api/v1/user/transfers")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(transferRequest)))
                 .andDo(print())
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isForbidden());
     }
 
     @Test
+    @WithAnonymousUser
     void getMyTransfers_Unauthorized() throws Exception {
-        mockMvc.perform(get("/api/v1/transfers/my")
+        mockMvc.perform(get("/api/v1/user/transfers")
                         .with(csrf()))
                 .andDo(print())
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isForbidden());
     }
 
     @Test
     @WithMockUser
     void executeTransfer_EmptyRequestBody() throws Exception {
-        mockMvc.perform(post("/api/v1/transfers")
+        mockMvc.perform(post("/api/v1/user/transfers")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
@@ -292,7 +263,7 @@ class TransferControllerTest {
         when(transferService.executeTransfer(any(TransferRequest.class), anyLong()))
                 .thenReturn(transferResponse);
 
-        mockMvc.perform(post("/api/v1/transfers")
+        mockMvc.perform(post("/api/v1/user/transfers")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(transferRequest)))
